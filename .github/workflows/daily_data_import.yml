@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '10 * * * *'
+    - cron: '10 */6 * * *'
 
 jobs:
   download_and_upload:
@@ -39,6 +39,7 @@ jobs:
         DIRECTORY="data/$DATE"
         mkdir -p "$DIRECTORY"
         cp "${{ env.file_path }}" "$DIRECTORY/data.txt"
+        echo $DATE > "latest.txt"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
