@@ -10,6 +10,14 @@ jobs:
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v3
+      with:
+        lfs: true
+
+    - name: Install Git LFS
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git-lfs
+        git lfs install
 
     - name: Calculate Previous Date and Download ZIP
       id: download_zip
@@ -31,6 +39,7 @@ jobs:
         echo "File Size: $FILE_SIZE"
         echo "size=$FILE_SIZE" >> $GITHUB_ENV
         echo "file_path=$FILE" >> $GITHUB_ENV
+        rm data.zip
 
     - name: Check File Size and Upload
       if: ${{ env.size > 1000 }}
