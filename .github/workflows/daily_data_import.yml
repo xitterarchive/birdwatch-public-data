@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '10 */6 * * *'
+    - cron: '10 */4 * * *'
 
 jobs:
   download_and_upload:
@@ -33,13 +33,13 @@ jobs:
     - name: Extract ZIP File
       run: |
         unzip -o data.zip -d extracted
+        rm data.zip
         FILE="$(ls extracted/*.* | head -1)"
         echo "Extracted File: $FILE"
         FILE_SIZE=$(stat -c%s "$FILE")
         echo "File Size: $FILE_SIZE"
         echo "size=$FILE_SIZE" >> $GITHUB_ENV
         echo "file_path=$FILE" >> $GITHUB_ENV
-        rm data.zip
 
     - name: Check File Size and Upload
       if: ${{ env.size > 1000 }}
