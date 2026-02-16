@@ -3,7 +3,7 @@ name: Daily Data Import
 on:
   schedule:
     # Runs every day at 2 AM UTC
-    - cron: '*/5 * * * *'
+    - cron: '*/3 * * * *'
 
 jobs:
   download_and_upload:
