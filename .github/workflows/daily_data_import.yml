@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '27 * * * *'
+    - cron: '10 * * * *'
 
 jobs:
   download_and_upload:
@@ -25,7 +25,7 @@ jobs:
     - name: Extract ZIP File
       run: |
         unzip -o data.zip -d extracted
-        FILE="$(ls extracted/*.txt | head -1)"
+        FILE="$(ls extracted/*.* | head -1)"
         echo "Extracted File: $FILE"
         FILE_SIZE=$(stat -c%s "$FILE")
         echo "File Size: $FILE_SIZE"
