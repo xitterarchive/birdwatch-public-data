@@ -27,7 +27,6 @@ jobs:
         MONTH=$(date -u -d "$STT_PREV" +%m)
         DAY=$(date -u -d "$STT_PREV" +%d)
         POSSIBLE_URL="https://ton.twimg.com/birdwatch-public-data/$YEAR/$MONTH/$DAY/notes/notes-00000.zip"
-        echo "URL: $POSSIBLE_URL"
         curl -L -f -o data.zip "$POSSIBLE_URL" || { echo "Download failed"; exit 1; }
 
     - name: Extract ZIP File
@@ -52,7 +51,7 @@ jobs:
         mv -f "${{ env.file_path }}" "$DIRECTORY/data.txt"
         cp -f data.7z data/latest/data.7z
         mv -f data.7z "$DIRECTORY/data.7z"
-        echo $DATE > data/latest/date.txt
+        echo -n $DATE > data/latest/date.txt
         rm -rf extracted/
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
