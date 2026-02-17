@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '22 */6 * * *'
+    - cron: '22 */4 * * *'
 
 jobs:
   download_and_upload:
@@ -48,7 +48,9 @@ jobs:
         DIRECTORY="data/$DATE"
         mkdir -p "$DIRECTORY"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data.7z "${{ env.file_path }}"
+        cp -f "${{ env.file_path }}" data/latest/data.txt
         mv -f "${{ env.file_path }}" "$DIRECTORY/data.txt"
+        cp -f data.7z data/latest/data.7z
         mv -f data.7z "$DIRECTORY/data.7z"
         echo $DATE > "latest.txt"
         rm -rf extracted/
