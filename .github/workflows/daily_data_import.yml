@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '22 * * * *'
+    - cron: '22 */6 * * *'
 
 jobs:
   download_and_upload:
@@ -34,7 +34,6 @@ jobs:
       run: |
         unzip -o data.zip -d extracted
         rm -f data.zip
-        rm -rf extracted/
         FILE="$(ls extracted/*.* | head -1)"
         echo "Extracted File: $FILE"
         FILE_SIZE=$(stat -c%s "$FILE")
@@ -49,9 +48,10 @@ jobs:
         DIRECTORY="data/$DATE"
         mkdir -p "$DIRECTORY"
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data.7z "${{ env.file_path }}"
-        mv "${{ env.file_path }}" "$DIRECTORY/data.txt"
-        mv data.7z "$DIRECTORY/data.7z"
+        mv -f "${{ env.file_path }}" "$DIRECTORY/data.txt"
+        mv -f data.7z "$DIRECTORY/data.7z"
         echo $DATE > "latest.txt"
+        rm -rf extracted/
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
