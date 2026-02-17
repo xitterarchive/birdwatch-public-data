@@ -16,7 +16,7 @@ jobs:
     - name: Install Git LFS
       run: |
         sudo apt-get update
-        sudo apt-get install -y git-lfs
+        sudo apt-get install -y git-lfs p7zip-full
         git lfs install
 
     - name: Calculate Previous Date and Download ZIP
@@ -33,7 +33,8 @@ jobs:
     - name: Extract ZIP File
       run: |
         unzip -o data.zip -d extracted
-        rm data.zip
+        rm -f data.zip
+        rm -rf extracted/
         FILE="$(ls extracted/*.* | head -1)"
         echo "Extracted File: $FILE"
         FILE_SIZE=$(stat -c%s "$FILE")
@@ -47,7 +48,9 @@ jobs:
         DATE=$(date -u -d "1 day ago" +%Y/%m/%d)
         DIRECTORY="data/$DATE"
         mkdir -p "$DIRECTORY"
-        cp "${{ env.file_path }}" "$DIRECTORY/data.txt"
+        7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data.7z "${{ env.file_path }}"
+        mv "${{ env.file_path }}" "$DIRECTORY/data.txt"
+        mv data.7z "$DIRECTORY/data.7z"
         echo $DATE > "latest.txt"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
