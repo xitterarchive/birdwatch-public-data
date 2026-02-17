@@ -52,7 +52,7 @@ jobs:
         mv -f "${{ env.file_path }}" "$DIRECTORY/data.txt"
         cp -f data.7z data/latest/data.7z
         mv -f data.7z "$DIRECTORY/data.7z"
-        echo $DATE > "latest.txt"
+        echo $DATE > data/latest/date.txt
         rm -rf extracted/
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
