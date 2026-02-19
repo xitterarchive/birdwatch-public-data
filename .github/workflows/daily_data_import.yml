@@ -8,66 +8,67 @@ jobs:
   download_and_upload:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v3
-      with:
-        lfs: true
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+        with:
+          lfs: true
 
-    - name: Install Git LFS
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y git-lfs p7zip-full
-        git lfs install
+      - name: Check Last Execution Date
+        id: check_date
+        run: |
+          if [ -f data/latest/date.txt ]; then
+            LAST_DATE=$(cat data/latest/date.txt)
+            CURRENT_DATE=$(date -u -d "1 day ago" +%Y/%m/%d)
+            if [ "$LAST_DATE" == "$CURRENT_DATE" ]; then
+              exit 0
+            fi
+          fi
 
-    - name: Calculate Previous Date and Download ZIP
-      id: download_zip
-      run: |
-        STT_PREV=$(date -u -d "1 day ago" +%Y-%m-%d)
-        YEAR=$(date -u -d "$STT_PREV" +%Y)
-        MONTH=$(date -u -d "$STT_PREV" +%m)
-        DAY=$(date -u -d "$STT_PREV" +%d)
-        POSSIBLE_URL="https://ton.twimg.com/birdwatch-public-data/$YEAR/$MONTH/$DAY/notes/notes-00000.zip"
-        curl -L -f -o data.zip "$POSSIBLE_URL" || { echo "Download failed"; exit 1; }
+      - name: Install Dependencies
+        id: install_dep
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git-lfs p7zip-full
+          git lfs install
 
-    - name: Extract ZIP File
-      run: |
-        unzip -o data.zip -d extracted
-        rm -f data.zip
-        FILE="$(ls extracted/*.* | head -1)"
-        echo "Extracted File: $FILE"
-        FILE_SIZE=$(stat -c%s "$FILE")
-        echo "File Size: $FILE_SIZE"
-        echo "size=$FILE_SIZE" >> $GITHUB_ENV
-        echo "file_path=$FILE" >> $GITHUB_ENV
+      - name: Calculate Previous Date and Download ZIP
+        id: download_zip
+        run: |
+          STT_PREV=$(date -u -d "1 day ago" +%Y-%m-%d)
+          POSSIBLE_URL="https://ton.twimg.com/birdwatch-public-data/$(date -u -d "$STT_PREV" +%Y)/$(date -u -d "$STT_PREV" +%m)/$(date -u -d "$STT_PREV" +%d)/notes/notes-00000.zip"
+          curl -L -f -o data.zip "$POSSIBLE_URL" || { echo "Download failed"; exit 1; }
 
-    - name: Check File Size and Upload
-      if: ${{ env.size > 1000 }}
-      run: |
-        DATE=$(date -u -d "1 day ago" +%Y/%m/%d)
-        DIRECTORY="data/$DATE"
-        mkdir -p "$DIRECTORY"
-        mv -f "${{ env.file_path }}" data.txt
-        rm -rf extracted/
-        awk -F'\t' 'NR == 1 { for (i=1; i<=NF; i++) if ($i == "summary") summary_col=i } NR > 1 { print $summary_col }' data.txt > data-summary.txt
-        7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data.7z data.txt
-        7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data-summary.7z data-summary.txt
-        cp -f data.txt data/latest/data.txt
-        mv -f data.txt $DIRECTORY/data.txt
-        cp -f data-summary.txt data/latest/data-summary.txt
-        mv -f data-summary.txt $DIRECTORY/data-summary.txt
-        cp -f data.7z data/latest/data.7z
-        mv -f data.7z $DIRECTORY/data.7z
-        cp -f data-summary.7z data/latest/data-summary.7z
-        mv -f data-summary.7z $DIRECTORY/data-summary.7z
-        echo -n $DATE > data/latest/date.txt
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "Upload data for $DATE"
-        git push origin main
+      - name: Extract and Set Up File Info
+        id: file_info
+        run: |
+          unzip -o data.zip -d extracted || { echo "Extraction failed"; exit 1; }
+          FILE="$(ls extracted/*.* | head -1)"
+          FILE_SIZE=$(stat -c%s "$FILE")
+          echo "size=$FILE_SIZE" >> $GITHUB_ENV
+          echo "file_path=$FILE" >> $GITHUB_ENV
 
-    - name: Fail if File Size is Not Greater than 1000
-      if: ${{ env.size <= 1000 }}
-      run: |
-        echo "File size is less than or equal to 1000 bytes. Failing the workflow."
-        exit 0
+      - name: Check File Size and Upload
+        if: ${{ env.size > 1000 }}
+        run: |
+          DATE=$(date -u -d "1 day ago" +%Y/%m/%d)
+          DIRECTORY="data/$DATE"
+          mkdir -p "$DIRECTORY"
+          mv -f "${{ env.file_path }}" data.txt
+          awk -F'\t' 'NR == 1 { for (i = 1; i <= NF; i++) if ($i == "summary") summary_col = i } NR > 1 { print $summary_col }' data.txt > data-summary.txt
+          for FILE in data.txt data-summary.txt; do
+              7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on "$DIRECTORY/${FILE}.7z" "$FILE"
+              cp -f "$FILE" data/latest/
+              mv -f "$FILE" "$DIRECTORY/"
+          done
+          echo -n $DATE > data/latest/date.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Upload data for $DATE"
+          git push origin main
+
+      - name: Fail if File Size is Not Greater than 1000
+        if: ${{ env.size <= 1000 }}
+        run: |
+          echo "File size is less than or equal to 1000 bytes. Failing the workflow."
+          exit 0
