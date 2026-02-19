@@ -2,7 +2,7 @@ name: Daily Data Import
 
 on:
   schedule:
-    - cron: '15 */8 * * *'
+    - cron: '15 */6 * * *'
 
 jobs:
   download_and_upload:
@@ -48,11 +48,17 @@ jobs:
         mkdir -p "$DIRECTORY"
         mv -f "${{ env.file_path }}" data.txt
         rm -rf extracted/
+        awk -F'\t' 'NR == 1 { for (i=1; i<=NF; i++) if ($i == "summary") summary_col=i } NR > 1 { print $summary_col }' data.txt > data-summary.txt
         7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data.7z data.txt
+        7z a -t7z -m0=lzma2 -mx=9 -mfb=64 -md=32m -ms=on data-summary.7z data-summary.txt
         cp -f data.txt data/latest/data.txt
         mv -f data.txt $DIRECTORY/data.txt
+        cp -f data-summary.txt data/latest/data-summary.txt
+        mv -f data-summary.txt $DIRECTORY/data-summary.txt
         cp -f data.7z data/latest/data.7z
         mv -f data.7z $DIRECTORY/data.7z
+        cp -f data-summary.7z data/latest/data-summary.7z
+        mv -f data-summary.7z $DIRECTORY/data-summary.7z
         echo -n $DATE > data/latest/date.txt
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
